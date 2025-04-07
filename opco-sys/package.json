@@ -14,7 +14,7 @@
     "@syncfusion/ej2-vue-diagrams": "^27.1.57",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "aos": "^2.3.4",
-    "axios": "^1.7.7",
+    "axios": "^1.7.8",
     "chart.js": "^4.4.5",
     "date-fns": "^4.1.0",
     "docx": "^9.0.3",
@@ -33,6 +33,7 @@
   "devDependencies": {
     "@mdi/font": "^7.4.47",
     "@tsconfig/node20": "^20.1.4",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20.14.5",
     "@vitejs/plugin-vue": "^5.0.5",
     "@vue/tsconfig": "^0.5.1",

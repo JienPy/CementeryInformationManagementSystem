@@ -1,36 +1,35 @@
 <template>
   <div class="settings-wrapper">
-    <!-- Settings Button and Menu -->
+    <!-- Three-Dot Menu Button and Dropdown -->
     <div class="settings-content">
       <v-btn
-        id="settings-activator"
+        id="options-activator"
         icon
         variant="text"
         color="primary"
-        class="settings-btn"
+        class="options-btn"
       >
-        <v-icon>mdi-cog</v-icon>
+        <v-icon>mdi-dots-vertical</v-icon>
       </v-btn>
 
       <v-menu
-        activator="#settings-activator"
+        activator="#options-activator"
         :close-on-content-click="true"
         transition="scale-transition"
         offset="10"
       >
-        <v-card class="settings-menu" elevation="2">
+        <v-card class="options-menu" elevation="2">
           <v-list>
             <v-list-item
-              v-for="(item, index) in settingsMenuItems"
-              :key="index"
+              @click="aboutUsDialog = true"
               class="menu-item"
               rounded="sm"
             >
               <template v-slot:prepend>
-                <v-icon color="medium-emphasis">{{ item.icon }}</v-icon>
+                <v-icon color="medium-emphasis">mdi-information</v-icon>
               </template>
               <template v-slot:title>
-                <span class="text-body-1">{{ item.title }}</span>
+                <span class="text-body-1">About Us</span>
               </template>
             </v-list-item>
 
@@ -60,25 +59,22 @@
       color="primary"
       class="logout-progress"
     />
+
+    <!-- About Us Dialog -->
+    <v-dialog v-model="aboutUsDialog" max-width="800">
+      <AboutUs @close="aboutUsDialog = false" />
+    </v-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import AboutUs from '@/components/AboutUs.vue';
 
 const router = useRouter();
 const loggingOut = ref(false);
-const settingsMenuItems = ref([
-  {
-    title: 'Settings',
-    icon: 'mdi-cog',
-  },
-  {
-    title: 'About us',
-    icon: 'mdi-information',
-  },
-]);
+const aboutUsDialog = ref(false);
 
 function logout() {
   loggingOut.value = true;
@@ -95,9 +91,8 @@ function logout() {
 <style scoped>
 .settings-wrapper {
   position: relative;
-  /* Add these to properly handle the ml-2 class from parent */
   display: inline-block;
-  margin-left: 8px; /* equivalent to ml-2 */
+  margin-left: 8px;
 }
 
 .settings-content {
@@ -105,7 +100,7 @@ function logout() {
   display: inline-block;
 }
 
-.settings-menu {
+.options-menu {
   border-radius: 8px;
   min-width: 200px;
 }

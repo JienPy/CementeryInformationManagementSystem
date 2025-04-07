@@ -149,7 +149,6 @@ const apiUrl = 'http://localhost:8055';
 const burialRecordsEndpoint = `${apiUrl}/items/burial_records`;
 
 const notifications = ref([]);
-const hasNotifications = ref(false);
 const notificationsMenu = ref(false);
 const dialog = ref(false);
 const dialogData = ref({});

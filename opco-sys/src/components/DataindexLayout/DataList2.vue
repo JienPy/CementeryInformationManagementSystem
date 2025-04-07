@@ -180,310 +180,89 @@
       </v-data-table>
     </div>
 
-    <!-- Enhanced Edit Dialog -->
-    <v-dialog v-model="dialog" max-width="1200px" persistent>
-      <v-card class="edit-dialog">
-        <v-toolbar color="primary" class="text-h5 text-white">
-          {{ formTitle }}
-          <v-spacer></v-spacer>
-          <v-btn icon="mdi-close" variant="text" @click="close" class="text-white" />
-        </v-toolbar>
+    <!-- Enhanced Edit Dialog with Mode Support -->
+    <v-dialog v-model="dialog" max-width="1600px" persistent class="form-container">
+      <v-card class="form-wrapper elevation-4">
+      <!-- Professional Header -->
+      <v-toolbar 
+        color="primary" 
+        class="form-header px-4 py-2 text-white"
+      >
+        <v-toolbar-title class="text-h5">
+          {{ 
+            mode === 'view' ? 'View Record Details' : 
+            mode === 'edit' ? 'Edit Burial Record' : 
+            'Create New Burial Record' 
+          }}
+        </v-toolbar-title>
+        <v-spacer />
+          
+          <!-- Mode Toggle for Edit/View -->
+        <v-btn-toggle 
+          v-if="mode !== 'new'"
+          v-model="mode" 
+          mandatory 
+          color="white"
+          class="elevation-2"
+        >
+          <v-btn value="view" variant="outlined" class="text-white">
+            <v-icon left>mdi-eye</v-icon>View
+          </v-btn>
+          <v-btn value="edit" variant="outlined" class="text-white">
+            <v-icon left>mdi-pencil</v-icon>Edit
+          </v-btn>
+        </v-btn-toggle>
+          
+        <v-btn 
+          icon 
+          variant="text" 
+          @click="close" 
+          class="text-white ml-2"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </v-toolbar>
 
-        <v-card-text class="pa-6">
-          <v-form ref="form" v-model="valid" lazy-validation>
+        <!-- Form Content -->
+      <v-card-text class="pa-6">
+        <v-form 
+          ref="form" 
+          v-model="valid" 
+          lazy-validation 
+          :disabled="mode === 'view'"
+        >
+        <!-- Sections with Enhanced Styling -->
+        <v-card 
+            v-for="(section, index) in formSections" 
+            :key="index"
+            class="section-card mb-6 pa-4"
+          >
+            <div class="section-header mb-4 pb-2">
+              <h3 class="text-h6">{{ section.title }}</h3>
+            </div>
+            
             <v-row>
-              <!-- Personal Information Section -->
-              <v-col cols="12">
-                <div class="text-h6 mb-4">Personal Information</div>
-                <v-row>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.first_name"
-                      label="First Name"
-                      variant="outlined"
-                      density="comfortable"
-                      :rules="[(v) => !!v || 'First name is required']"
-                      required
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.middle_name"
-                      label="Middle Name"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.last_name"
-                      label="Last Name"
-                      variant="outlined"
-                      density="comfortable"
-                      :rules="[(v) => !!v || 'Last name is required']"
-                      required
-                    />
-                  </v-col>
-                </v-row>
-              </v-col>
-
-              <!-- Demographics Section -->
-              <v-col cols="12">
-                <div class="text-h6 mb-4">Demographics</div>
-                <v-row>
-                  <v-col cols="12" md="3">
-                    <v-text-field
-                      v-model="editedItem.age"
-                      label="Age"
-                      type="number"
-                      variant="outlined"
-                      density="comfortable"
-                      :rules="[
-                        (v) => !!v || 'Age is required',
-                        (v) => v > 0 || 'Age must be greater than 0'
-                      ]"
-                      required
-                    />
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-select
-                      v-model="editedItem.gender"
-                      label="Gender"
-                      :items="['male', 'female']"
-                      variant="outlined"
-                      density="comfortable"
-                      :rules="[(v) => !!v || 'Gender is required']"
-                      required
-                    />
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-select
-                      v-model="editedItem.indigent"
-                      label="Indigent Status"
-                      :items="['yes', 'no']"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field
-                      v-model="editedItem.address"
-                      label="Address"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                </v-row>
-              </v-col>
-
-              <!-- Dates Section -->
-              <v-col cols="12">
-                <div class="text-h6 mb-4">Important Dates</div>
-                <v-row>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.date_of_birth"
-                      label="Date of Birth"
-                      type="date"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.date_of_death"
-                      label="Date of Death"
-                      type="date"
-                      variant="outlined"
-                      density="comfortable"
-                      :rules="[(v) => !!v || 'Date of death is required']"
-                      required
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.date_of_renewal"
-                      label="Date of Renewal"
-                      type="date"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                </v-row>
-              </v-col>
-
-              <!-- Location & Contact Section -->
-              <v-col cols="12">
-                <div class="text-h6 mb-4">Location & Contact Information</div>
-                <v-row>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.location"
-                      label="Location"
-                      variant="outlined"
-                      density="comfortable"
-                      :rules="[(v) => !!v || 'Location is required']"
-                      required
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.contact_person"
-                      label="Contact Person"
-                      variant="outlined"
-                      density="comfortable"
-                      :rules="[(v) => !!v || 'Contact person is required']"
-                      required
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.graveyard_id"
-                      label="Graveyard ID"
-                      variant="outlined"
-                      density="comfortable"
-                      
-                    />
-                  </v-col>
-                </v-row>
-              </v-col>
-
-              <!-- Payment & Transfer Section -->
-              <v-col cols="12">
-                <div class="text-h6 mb-4">Payment & Transfer Details</div>
-                <v-row>
-                  <v-col cols="12" md="3">
-                    <v-text-field
-                      v-model="editedItem.amount"
-                      label="Amount"
-                      type="number"
-                      variant="outlined"
-                      density="comfortable"
-                      prefix="₱"
-                      :rules="[(v) => v >= 0 || 'Amount must be non-negative']"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field
-                      v-model="editedItem.or_number"
-                      label="OR Number"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field
-                      v-model="editedItem.transfer"
-                      label="Transfer"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field
-                      v-model="editedItem.new_user_of_burial"
-                      label="New User of Burial"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                </v-row>
-              </v-col>
-
-              <!-- Additional Details Section -->
-              <!-- Additional Details Section -->
-              <v-col cols="12">
-                <div class="text-h6 mb-4">Additional Details</div>
-                <v-row>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.ab_stores_tomb"
-                      label="AB Stores Tomb"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.bone_vault"
-                      label="Bone Vault"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                    v-model="editedItem.year_covered"
-                    label="Year Covered"
-                    type="number"
-                    variant="outlined"
-                    density="comfortable"
-                    min="0"
-                    hint="Number of years the burial plot is covered"
-                    persistent-hint
-                  />
-                    </v-col>
-
-  <!-- Add fields to show calculated days -->
-  <v-col cols="12" md="4">
-    <v-text-field
-      v-model="editedItem.days_passed"
-      label="Days Passed"
-      variant="outlined"
-      density="comfortable"
-      readonly
-    />
-  </v-col>
-  <v-col cols="12" md="4">
-    <v-text-field
-      v-model="editedItem.days_left"
-      label="Days Left"
-      variant="outlined"
-      density="comfortable"
-      readonly
-    />
-  </v-col>
-                </v-row>
-              </v-col>
-
-              <!-- Renewal Status Section -->
-              <v-col cols="12">
-                <div class="text-h6 mb-4">Renewal Status</div>
-                <v-row>
-                  <v-col cols="12" md="6">
-                    <v-select
-                      v-model="editedItem.renew"
-                      label="Renewal Status"
-                      :items="['Pending', 'Completed', 'Not Required']"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model="editedItem.number_of_renew"
-                      label="Number of Renewals"
-                      type="number"
-                      min="0"
-                      variant="outlined"
-                      density="comfortable"
-                      hint="Number of 7-year renewal periods"
-                      persistent-hint
-                    />
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-text-field
-                      v-model="editedItem.days_left"
-                      label="Days Left"
-                      type="number"
-                      variant="outlined"
-                      density="comfortable"
-                      readonly
-                    />
-                  </v-col>
-                </v-row>
+              <v-col 
+                v-for="field in section.fields" 
+                :key="field.key" 
+                cols="12" 
+                md="4"
+              >
+                <v-text-field
+                  v-model="editedItem[field.key]"
+                  :label="field.label"
+                  :type="field.type || 'text'"
+                  variant="outlined"
+                  density="comfortable"
+                  :rules="field.rules || []"
+                  :readonly="mode === 'view'"
+                  :hint="field.hint"
+                  persistent-hint
+                />
               </v-col>
             </v-row>
+          </v-card>
+            
           </v-form>
         </v-card-text>
 
@@ -499,13 +278,14 @@
             Cancel
           </v-btn>
           <v-btn
+            v-if="mode === 'edit' || mode === 'new'"
             color="primary"
             class="ml-4"
             @click="save"
             :disabled="!valid"
             :loading="saving"
           >
-            Save Record
+            {{ mode === 'new' ? 'Create Record' : 'Save Changes' }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -568,6 +348,8 @@ const apiUrl = 'http://localhost:8055';
 const burialRecordsEndpoint = `${apiUrl}/items/burial_records`;
 const router = useRouter();
 const authToken = ref(localStorage.getItem('auth-token'));
+// Add mode ref to the existing script
+const mode = ref('view'); // Can be 'view', 'edit', or 'new'
 
 const search = ref(''); // Search field
 const options = ref({}); // For managing table sorting
@@ -678,6 +460,178 @@ const filters = ref({
   ageRange: [0, 120]
 });
 
+const formSections = [
+  {
+    title: 'Personal Information',
+    fields: [
+      { 
+        key: 'first_name', 
+        label: 'First Name', 
+        rules: [(v) => !!v || 'First name is required'], 
+        required: true 
+      },
+      { 
+        key: 'middle_name', 
+        label: 'Middle Name' 
+      },
+      { 
+        key: 'last_name', 
+        label: 'Last Name', 
+        rules: [(v) => !!v || 'Last name is required'], 
+        required: true 
+      }
+    ]
+  },
+  {
+    title: 'Demographics',
+    fields: [
+      { 
+        key: 'age', 
+        label: 'Age', 
+        type: 'number',
+        rules: [
+          (v) => !!v || 'Age is required',
+          (v) => v > 0 || 'Age must be greater than 0'
+        ],
+        required: true
+      },
+      { 
+        key: 'gender', 
+        label: 'Gender', 
+        rules: [(v) => !!v || 'Gender is required'], 
+        required: true 
+      },
+      { 
+        key: 'indigent', 
+        label: 'Indigent Status' 
+      },
+      { 
+        key: 'address', 
+        label: 'Address' 
+      }
+    ]
+  },
+  {
+    title: 'Important Dates',
+    fields: [
+      { 
+        key: 'date_of_birth', 
+        label: 'Date of Birth', 
+        type: 'date' 
+      },
+      { 
+        key: 'date_of_death', 
+        label: 'Date of Death', 
+        type: 'date', 
+        rules: [(v) => !!v || 'Date of death is required'], 
+        required: true 
+      },
+      { 
+        key: 'date_of_renewal', 
+        label: 'Date of Renewal', 
+        type: 'date' 
+      }
+    ]
+  },
+  {
+    title: 'Location & Contact Information',
+    fields: [
+      { 
+        key: 'location', 
+        label: 'Location', 
+        rules: [(v) => !!v || 'Location is required'], 
+        required: true 
+      },
+      { 
+        key: 'contact_person', 
+        label: 'Contact Person', 
+        rules: [(v) => !!v || 'Contact person is required'], 
+        required: true 
+      },
+      { 
+        key: 'graveyard_id', 
+        label: 'Graveyard ID' 
+      }
+    ]
+  },
+  {
+    title: 'Payment & Transfer Details',
+    fields: [
+      { 
+        key: 'amount', 
+        label: 'Amount', 
+        type: 'number', 
+        rules: [(v) => v >= 0 || 'Amount must be non-negative'] 
+      },
+      { 
+        key: 'or_number', 
+        label: 'OR Number' 
+      },
+      { 
+        key: 'transfer', 
+        label: 'Transfer' 
+      },
+      { 
+        key: 'new_user_of_burial', 
+        label: 'New User of Burial' 
+      }
+    ]
+  },
+  {
+    title: 'Additional Details',
+    fields: [
+      { 
+        key: 'ab_stores_tomb', 
+        label: 'AB Stores Tomb' 
+      },
+      { 
+        key: 'bone_vault', 
+        label: 'Bone Vault' 
+      },
+      { 
+        key: 'year_covered', 
+        label: 'Year Covered', 
+        type: 'number', 
+        min: 0, 
+        hint: 'Number of years the burial plot is covered', 
+        persistentHint: true 
+      },
+      { 
+        key: 'days_passed', 
+        label: 'Days Passed', 
+        readonly: true 
+      },
+      { 
+        key: 'days_left', 
+        label: 'Days Left', 
+        readonly: true 
+      }
+    ]
+  },
+  {
+    title: 'Renewal Status',
+    fields: [
+      { 
+        key: 'renew', 
+        label: 'Renewal Status' 
+      },
+      { 
+        key: 'number_of_renew', 
+        label: 'Number of Renewals', 
+        type: 'number', 
+        min: 0, 
+        hint: 'Number of 7-year renewal periods', 
+        persistentHint: true 
+      },
+      { 
+        key: 'days_left', 
+        label: 'Days Left', 
+        type: 'number', 
+        readonly: true 
+      }
+    ]
+  }
+]; 
 // Computed property for active filters count
 const activeFilters = computed(() => {
   return Object.values(filters.value).filter(val => {
@@ -753,9 +707,20 @@ const getDaysLeftColor = (days) => {
   return 'success';
 };
 
+
 function editItem(item) {
   editedIndex.value = dataFlow.value.indexOf(item);
   editedItem.value = Object.assign({}, item);
+  mode.value = 'view'; // Default to view mode when opening
+  dialog.value = true;
+}
+const addNewRecordButton = () => {
+  createNewItem();
+};
+
+function createNewItem() {
+  editedItem.value = Object.assign({}, defaultItem.value);
+  mode.value = 'new';
   dialog.value = true;
 }
 
@@ -789,6 +754,7 @@ function close() {
   nextTick(() => {
     editedItem.value = Object.assign({}, defaultItem.value);
     editedIndex.value = -1;
+    mode.value = 'view';
   });
 }
 
@@ -800,52 +766,36 @@ function closeDelete() {
   });
 }
 
+
 async function save() {
-    if (!valid.value) return;
+  // Existing save logic, but now handling both edit and new modes
+  if (!valid.value) return;
 
-    // Ensure you're using the updated values of editedItem
-    const { date_of_death, year_covered, number_of_renew } = editedItem.value;
-
-    // Calculate year covered, days passed, and days left
-    const { daysPassed, daysLeft, yearCovered } = calculateYearCoveredAndDays(
-        date_of_death,
-        year_covered,
-        number_of_renew // Ensure this is the updated value
-    );
-
-    // Update editedItem with the calculated values
-    editedItem.value.year_covered = yearCovered; // Update the year covered
-    editedItem.value.days_passed = daysPassed; // Update days passed
-    editedItem.value.days_left = daysLeft; // Update days left
-
-    saving.value = true;
-    try {
-        if (editedIndex.value > -1) {
-            const response = await axios.patch(
-                `${burialRecordsEndpoint}/${editedItem.value.id}`,
-                editedItem.value
-            );
-
-            // Update the specific item in dataFlow
-            const updatedItem = response.data.data;
-            const index = dataFlow.value.findIndex(item => item.id === updatedItem.id);
-            if (index !== -1) {
-                dataFlow.value[index] = { ...updatedItem, days_passed: daysPassed, days_left: daysLeft, year_covered: yearCovered };
-            }
-            showSnackbar('Record updated successfully', 'success');
-        } else {
-            const response = await axios.post(burialRecordsEndpoint, editedItem.value);
-            dataFlow.value.push({ ...response.data.data, days_passed: daysPassed, days_left: daysLeft, year_covered: yearCovered });
-            showSnackbar('Record created successfully', 'success');
-        }
-        close();
-    } catch (error) {
-        console.error(error);
-        showSnackbar(error.response?.data?.message || 'An error occurred while saving', 'error');
-    } finally {
-        saving.value = false;
+  saving.value = true;
+  try {
+    if (mode.value === 'edit') {
+      // Existing edit logic
+      const response = await axios.patch(
+        `${burialRecordsEndpoint}/${editedItem.value.id}`,
+        editedItem.value
+      );
+      // Update logic remains the same
+    } else if (mode.value === 'new') {
+      // New record creation logic
+      const response = await axios.post(burialRecordsEndpoint, editedItem.value);
+      dataFlow.value.push(response.data.data);
+      showSnackbar('New record created successfully', 'success');
     }
- }
+    
+    close();
+  } catch (error) {
+    console.error(error);
+    showSnackbar(error.response?.data?.message || 'An error occurred', 'error');
+  } finally {
+    saving.value = false;
+  }
+}
+
 
  function calculateYearCoveredAndDays(dateOfDeath, yearCovered, numberOfRenewals) {
     
@@ -966,78 +916,28 @@ function showSnackbar(text, color = 'success') {
 }
 </script>
 
+
 <style scoped>
-.records-dashboard {
-  border-radius: 16px;
-  overflow: hidden;
+.form-container {
+  font-family: 'Inter', 'Roboto', sans-serif;
 }
 
-.dashboard-header {
-  background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
-}
-
-.control-panel {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.search-field {
-  min-width: 300px;
-}
-
-.filter-btn {
-  height: 42px;
-}
-
-.export-btn {
-  height: 42px;
-}
-
-.records-table {
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.status-chip {
-  min-width: 90px;
-}
-
-.edit-dialog {
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.confirm-dialog {
+.v-card.form-wrapper {
   border-radius: 12px;
   overflow: hidden;
 }
 
-/* Responsive adjustments */
-@media (max-width: 600px) {
-  .search-field {
-    min-width: 100%;
-  }
-  
-  .control-panel .d-flex {
-    gap: 12px !important;
-  }
-
-  .filter-btn,
-  .export-btn {
-    width: 100%;
-  }
+.form-header {
+  background: linear-gradient(45deg, #1976D2, #42A5F5);
 }
 
-/* Transitions */
-.v-dialog-transition-enter-active,
-.v-dialog-transition-leave-active {
-  transition: opacity 0.3s ease;
+.v-card.outlined {
+  border: 1px solid rgba(0,0,0,0.12);
+  transition: all 0.3s ease;
 }
 
-.v-dialog-transition-enter-from,
-.v-dialog-transition-leave-to {
-  opacity: 0;
+.v-card.outlined:hover {
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+  transform: translateY(-5px);
 }
 </style>

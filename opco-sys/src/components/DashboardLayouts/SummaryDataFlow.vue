@@ -1,126 +1,166 @@
 <template>
   <v-sheet class="analytics-dashboard pa-6" elevation="3" rounded="lg">
-  <!-- Container Div -->
-  <div class="container">
-    <!-- Form -->
-    <v-form class="form">
-      <!-- Data Table -->
-      <v-data-table
-        :headers="headers"
-        :items="dataFlow"
-        :sort-by="[{ key: 'first_name', order: 'asc' }]"
-      >
-        <!-- Template for Table Top -->
-        <template v-slot:top>
-          <!-- Toolbar -->
-          <v-toolbar flat>
-            <!-- Toolbar Title -->
-            <v-toolbar-title>Real Time Data Flow</v-toolbar-title>
-            <!-- Spacer -->
-            <v-spacer></v-spacer>
-            <!-- Refresh Button -->
-            <v-btn color="primary" dark @click="refreshData">Refresh</v-btn>
-            <!-- Button to navigate to data-index route -->
-            <v-btn icon :to="{ name: 'data-index' }">
-              <!-- Icon -->
-              <v-icon>mdi-database-search</v-icon>
-            </v-btn>
-          </v-toolbar>
-        </template>
-      </v-data-table>
-    </v-form>
-  </div>
-</v-sheet>
+    <div class="container">
+      <v-form class="form">
+        <v-data-table
+          :headers="headers"
+          :items="dataFlow"
+          :sort-by="[{ key: 'first_name', order: 'asc' }]"
+        >
+          <template v-slot:top>
+            <v-toolbar flat>
+              <v-toolbar-title>Data Records</v-toolbar-title>
+              <v-spacer></v-spacer>
+              <v-btn color="primary" dark @click="refreshData">Refresh</v-btn>
+              <v-btn icon :to="{ name: 'data-index' }">
+                <v-icon>mdi-database-search</v-icon>
+              </v-btn>
+            </v-toolbar>
+          </template>
+
+          <!-- Custom column for Days Passed with tooltip -->
+          <template v-slot:item.days_passed="{ item }">
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props">{{ item.days_passed }}</span>
+              </template>
+              <span>{{ formatTooltipDate(item.passed_exact_date) }}</span>
+            </v-tooltip>
+          </template>
+
+          <!-- Custom column for Days Left with tooltip -->
+          <template v-slot:item.days_left="{ item }">
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props">{{ item.days_left }}</span>
+              </template>
+              <span>{{ formatTooltipDate(item.left_exact_date) }}</span>
+            </v-tooltip>
+          </template>
+        </v-data-table>
+      </v-form>
+    </div>
+  </v-sheet>
 </template>
 
 <script setup>
-  // Import Vue functions
-  import { ref, onMounted } from 'vue';
-  // Import axios for HTTP requests
-  import axios from 'axios';
-  // Import useRouter for route navigation
-  import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
 
-  // API URL
-  const apiUrl = 'http://localhost:8055';
-  // Burial Records Endpoint
-  const burialRecordsEndpoint = `${apiUrl}/items/burial_records`;
-  // Router instance
-  const router = useRouter();
-  // Authentication Token
-  const authToken = ref(localStorage.getItem('auth-token'));
+const apiUrl = 'http://localhost:8055';
+const burialRecordsEndpoint = `${apiUrl}/items/burial_records`;
+const router = useRouter();
+const authToken = ref(localStorage.getItem('auth-token'));
+const dataFlow = ref([]);
 
-  // Data Flow Array
-  const dataFlow = ref([]);
-
-  // On Mounted Lifecycle Hook
-  onMounted(async () => {
-    // Check if authentication token exists
-    if (!authToken.value) {
-      console.log('No authentication token found. Redirecting to login page...');
-      router.push('/login');
-    } else {
-      // Set Authorization header for axios
-      axios.defaults.headers.common['Authorization'] = `Bearer ${authToken.value}`;
-      console.log('Authentication token:', authToken.value);
-      await fetchBurialRecords();
-    }
+const formatTooltipDate = (date) => {
+  if (!date) return 'N/A';
+  const formattedDate = new Date(date);
+  return formattedDate.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit'
   });
+};
 
-  const fetchBurialRecords = async () => {
-    try {
-      // Get burial records from API
-      const response = await axios.get(burialRecordsEndpoint);
-      const data = response.data.data;
-      // Get today's date
-      const today = new Date();
-
-      // Format data for table
-      const formattedData = data.map((item) => {
-        const yearCovered = new Date(item.year_covered);
-        
-        // Calculate days passed since year covered
-        const daysPassed = yearCovered > today ? 0 : Math.floor((today - yearCovered) / (1000 * 60 * 60 * 24));
-
-        // Calculate days left until expiration
-        const daysLeft = Math.max(Math.floor((yearCovered - today) / (1000 * 60 * 60 * 24)), 0);
-
-        return {
-          first_name: item.first_name,
-          middle_name: item.middle_name,
-          last_name: item.last_name,
-          address: item.address,
-          date_of_death: item.date_of_death,
-          location: item.location,
-          contact_person: item.contact_person,
-          renewal: item.renew,
-          days_passed: daysPassed,
-          days_left: daysLeft,
-        };
-      });
-
-      // Update dataFlow array
-      dataFlow.value = formattedData;
-    } catch (error) {
-      console.error(error);
-    }
+const calculateYearCoveredAndDays = (dateOfDeath, numberOfRenewals) => {
+  if (!dateOfDeath) return { 
+    daysPassed: 0, 
+    daysLeft: 0, 
+    yearCovered: 0,
+    passed_exact_date: null,
+    left_exact_date: null
   };
 
-  // Headers for Data Table
-  const headers = ref([
-    { title: 'Last Name', key: 'last_name', minWidth: '130px', resizable: true, sortable: true, align: 'center' },
-    { title: 'First Name', key: 'first_name', minWidth: '130px', resizable: true, sortable: true, align: 'center' },
-    { title: 'Middle Name', key: 'middle_name', minWidth: '100px', resizable: true, align: 'center' },
-    { title: 'Address', key: 'address', minWidth: '100px', resizable: true, align: 'center' },
-    { title: 'Date of Death', key: 'date_of_death', minWidth: '140px', resizable: true, sortable: true, align: 'center' },
-    { title: 'Location', key: 'location', width: '50px', resizable: true, align: 'center' },
-    { title: 'Contact Person', key: 'contact_person', minWidth: '140px', resizable: true, align: 'center' },
-    { title: 'Renewal', key: 'renewal', width: '150px', resizable: true, align: 'center' },
-    { title: 'Days Passed', key: 'days_passed', minWidth: '100px', resizable: true, align: 'center' },
-    { title: 'Days Left', key: 'days_left', minWidth: '100px', resizable: true, align: 'center' },
-  ]);
+  const baseYearCovered = 7; // Always start with 7 years as base
+  const renewalYears = numberOfRenewals ? parseInt(numberOfRenewals, 10) || 0 : 0;
 
-  const refreshData = async () => {
+  const totalYearsCovered = baseYearCovered + (renewalYears * 7);
+  const deathDate = new Date(dateOfDeath);
+  const today = new Date();
+
+  const expirationDate = new Date(deathDate);
+  expirationDate.setFullYear(deathDate.getFullYear() + totalYearsCovered);
+
+  const daysPassed = Math.max(0, Math.floor((today - expirationDate) / (1000 * 60 * 60 * 24)));
+  const daysLeft = Math.max(0, Math.floor((expirationDate - today) / (1000 * 60 * 60 * 24)));
+
+  return { 
+    daysPassed, 
+    daysLeft, 
+    yearCovered: totalYearsCovered,
+    passed_exact_date: daysPassed > 0 ? today : null,
+    left_exact_date: daysLeft > 0 ? expirationDate : null
+  };
+};
+
+onMounted(async () => {
+  if (!authToken.value) {
+    console.log('No authentication token found. Redirecting to login page...');
+    router.push('/login');
+  } else {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken.value}`;
     await fetchBurialRecords();
-  };
+  }
+});
+
+const fetchBurialRecords = async () => {
+  try {
+    const response = await axios.get(burialRecordsEndpoint);
+    const data = response.data.data;
+
+    // Format data for table
+    const formattedData = data.map((item) => {
+      const { 
+        daysPassed, 
+        daysLeft, 
+        yearCovered,
+        passed_exact_date,
+        left_exact_date
+      } = calculateYearCoveredAndDays(
+        item.date_of_death,
+        item.number_of_renew || 0 // Assuming this field exists in the API response
+      );
+
+      return {
+        first_name: item.first_name,
+        middle_name: item.middle_name,
+        last_name: item.last_name,
+        address: item.address,
+        date_of_death: item.date_of_death,
+        location: item.location,
+        contact_person: item.contact_person,
+        renewal: item.renew,
+        days_passed: daysPassed,
+        days_left: daysLeft,
+        year_covered: yearCovered,
+        passed_exact_date: passed_exact_date,
+        left_exact_date: left_exact_date
+      };
+    });
+
+    // Update dataFlow array
+    dataFlow.value = formattedData;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const headers = ref([
+  { title: 'Last Name', key: 'last_name', minWidth: '130px', resizable: true, sortable: true, align: 'center' },
+  { title: 'First Name', key: 'first_name', minWidth: '130px', resizable: true, sortable: true, align : 'center' },
+  { title: 'Middle Name', key: 'middle_name', minWidth: '100px', resizable: true, align: 'center' },
+  { title: 'Address', key: 'address', minWidth: '100px', resizable: true, align: 'center' },
+  { title: 'Date of Death', key: 'date_of_death', minWidth: '140px', resizable: true, sortable: true, align: 'center' },
+  { title: 'Location', key: 'location', width: '50px', resizable: true, align: 'center' },
+  { title: 'Contact Person', key: 'contact_person', minWidth: '140px', resizable: true, align: 'center' },
+  { title: 'Renewal', key: 'renewal', width: '150px', resizable: true, align: 'center' },
+  { title: 'Days Passed', key: 'days_passed', minWidth: '100px', resizable: true, align: 'center' },
+  { title: 'Days Left', key: 'days_left', minWidth: '100px', resizable: true, align: 'center' },
+]);
+
+const refreshData = async () => {
+  await fetchBurialRecords();
+};
 </script>

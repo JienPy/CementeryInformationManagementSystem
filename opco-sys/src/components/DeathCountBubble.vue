@@ -157,7 +157,23 @@
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
+      const records = response.data.data;
       const newTotal = response.data.data.length;
+
+      // Calculate today's records
+    const today = new Date();
+    const todayRecordCount = records.filter(record => {
+      const recordDate = new Date(record.date_created);
+      return recordDate.toDateString() === today.toDateString();
+    }).length;
+    
+    // Calculate this month's records
+    const monthRecordCount = records.filter(record => {
+      const recordDate = new Date(record.date_created);
+      return recordDate.getMonth() === today.getMonth() && 
+             recordDate.getFullYear() === today.getFullYear();
+    }).length;
+      
       if (newTotal > totalDeaths.value && totalDeaths.value !== 0) {
         hasNewRecords.value = true;
         newRecordsCount.value = newTotal - totalDeaths.value;
@@ -166,9 +182,9 @@
       }
       
       totalDeaths.value = newTotal;
-      todayRecords.value = Math.floor(Math.random() * 10); // Simulate today's records
-      monthlyRecords.value = Math.floor(Math.random() * 100); // Simulate monthly records
-      lastUpdated.value = new Date().toLocaleString();
+    todayRecords.value = todayRecordCount;
+    monthlyRecords.value = monthRecordCount;
+    lastUpdated.value = new Date().toLocaleString();
       
       isPulsing.value = true;
       setTimeout(() => {

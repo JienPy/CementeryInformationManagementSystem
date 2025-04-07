@@ -1,129 +1,8 @@
 <template>
- <v-card class="tomb-management elevation-3">
-    <v-container fluid class="form-container">
-      <!-- Header Section -->
-      <v-row class="header-section mb-6">
-        <v-col cols="12" md="8">
-          <h1 class="text-h4 font-weight-bold primary--text">
-            {{ selectedCollectionTitle }}
-            <span class="text-subtitle-1 text-medium-emphasis">Management Dashboard</span>
-          </h1>
-        </v-col>
-        <v-col cols="12" md="4">
-          <v-text-field
-            v-model="search"
-            prepend-inner-icon="mdi-magnify"
-            label="Search records..."
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="search-field"
-          />
-        </v-col>
-      </v-row>
-
-      <!-- Collection Navigation -->
-      <v-row class="collection-navigation mb-6">
-        <v-col cols="12">
-          <v-card flat class="pa-4 rounded-lg">
-            <v-row align="center" justify="space-between">
-              <v-col v-for="collection in collections" :key="collection.value" cols="auto">
-                <v-btn
-                  :color="selectedCollection === collection.value ? 'primary' : ''"
-                  :variant="selectedCollection === collection.value ? 'elevated' : 'outlined'"
-                  class="collection-btn"
-                  @click="selectCollection(collection.value)"
-                >
-                  <v-icon :icon="getCollectionIcon(collection.value)" class="mr-2" />
-                  {{ collection.label }}
-                </v-btn>
-                <v-btn
-                  icon="mdi-map-marker"
-                  variant="text"
-                  size="small"
-                  class="ml-2"
-                  @click.stop="openMap(collection.value)"
-                />
-              </v-col>
-            </v-row>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Available Items Data Table -->
-      <v-card flat class="data-table-container mb-4">
-        <v-card-title class="bg-primary text-white">
-          Available Items
-        </v-card-title>
-        <v-data-table
-          :headers="getHeaders"
-          :items="availableItems"
-          :search="search"
-          :loading="isLoading"
-          hover
-        >
-          <template v-slot:item.status="{ item }">
-            <v-chip
-              :color="getStatusChipColor(item.status)"
-              size="small"
-              class="text-capitalize"
-            >
-              {{ item.status }}
-            </v-chip>
-          </template>
-          
-          <template v-slot:item.action="{ item }">
-            <v-btn
-              icon="mdi-pencil"
-              variant="text"
-              size="small"
-              color="primary"
-              class="mr-2"
-              @click="editItem(item)"
-            />
-          </template>
-        </v-data-table>
-      </v-card>
-
-      <!-- Inactive/Other Status Items Data Table -->
-      <v-card flat class="data-table-container">
-        <v-card-title class="bg-warning text-black">
-          Other Status Items
-        </v-card-title>
-        <v-data-table
-          :headers="getHeaders"
-          :items="inactiveItems"
-          :search="search"
-          :loading="isLoading"
-          hover
-        >
-          <template v-slot:item.status="{ item }">
-            <v-chip
-              :color="getStatusChipColor(item.status)"
-              size="small"
-              class="text-capitalize"
-            >
-              {{ item.status }}
-            </v-chip>
-          </template>
-          
-          <template v-slot:item.action="{ item }">
-            <v-btn
-              icon="mdi-pencil"
-              variant="text"
-              size="small"
-              color="primary"
-              class="mr-2"
-              @click="editItem(item)"
-            />
-          </template>
-        </v-data-table>
-      </v-card>
-
-      <!-- Add this inside your template, at the same level as other dialogs -->
-      <v-dialog v-model="editDialog" max-width="500px">
+    <!-- Add this inside your template, at the same level as other dialogs -->
+    <v-dialog v-model="editDialog" max-width="500px">
         <v-card>
-          <v-card-title class="text-h5 bg-primary text-white">
+          <v-card-title class="text-h5 bg-primary text-black pa-4">
             {{ formTitle }}
           </v-card-title>
 
@@ -215,268 +94,9 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-
-      <!-- Enhanced Map Dialog -->
-      <v-dialog v-model="dialog" fullscreen transition="dialog-bottom-transition">
-        <v-card>
-          <v-toolbar color="primary" prominent>
-            <v-btn icon="mdi-close" @click="dialog = false" />
-            <v-toolbar-title class="text-h6 font-weight-bold">
-              {{ selectedCollectionTitle }} Map View
-            </v-toolbar-title>
-            <v-spacer />
-            <v-btn icon="mdi-refresh" @click="refreshMapData" />
-          </v-toolbar>
-
-          <v-container fluid class="map-container pa-6">
-            <v-row>
-              <!-- Map Statistics -->
-              <v-col cols="12" md="3">
-                <v-card class="stats-card mb-4">
-                  <v-card-text>
-                    <div class="text-h6 mb-2">Statistics</div>
-                    <v-list density="compact">
-                      <v-list-item>
-                        <template v-slot:prepend>
-                          <v-icon color="primary">mdi-database</v-icon>
-                        </template>
-                        <v-list-item-title>Total Units</v-list-item-title>
-                        <v-list-item-subtitle>{{ tombs.length }}</v-list-item-subtitle>
-                      </v-list-item>
-                      <v-list-item>
-                        <template v-slot:prepend>
-                          <v-icon color="success">mdi-check-circle</v-icon>
-                        </template>
-                        <v-list-item-title>Available</v-list-item-title>
-                        <v-list-item-subtitle>
-                          {{ getStatusCount('available') }}
-                        </v-list-item-subtitle>
-                      </v-list-item>
-                      <v-list-item>
-                        <template v-slot:prepend>
-                          <v-icon color="warning">mdi-alert</v-icon>
-                        </template>
-                        <v-list-item-title>Needs Attention</v-list-item-title>
-                        <v-list-item-subtitle>
-                          {{ getNeedsAttentionCount() }}
-                        </v-list-item-subtitle>
-                      </v-list-item>
-                    </v-list>
-                  </v-card-text>
-                </v-card>
-
-                <!-- Status Legend -->
-                <v-card class="legend-card">
-                  <v-card-text>
-                    <div class="text-h6 mb-2">Status Legend</div>
-                    <div class="legend-grid">
-                      <div
-                        v-for="status in statusLegend"
-                        :key="status.label"
-                        class="legend-item"
-                      >
-                        <div
-                          class="legend-color"
-                          :style="{ backgroundColor: status.color }"
-                        />
-                        <span class="legend-label">{{ status.label }}</span>
-                      </div>
-                    </div>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-
-              <!-- Interactive Map -->
-              <v-col cols="12" md="9">
-                <v-card class="map-view-card">
-                  <v-card-text>
-                    <div class="map-grid">
-                      <v-hover
-                        v-for="tomb in currentTombs"
-                        :key="tomb.id"
-                        v-slot="{ isHovering, props }"
-                      >
-                        <div
-                          v-bind="props"
-                          class="tomb-cell"
-                          :class="{ 'elevation-4': isHovering }"
-                          :style="{
-                            backgroundColor: getStatusColor(tomb.status),
-                            transform: isHovering ? 'scale(1.1)' : 'scale(1)'
-                          }"
-                          @click="showTombDetails(tomb)"
-                        >
-                        <div class="tomb-label">
-                          <!-- Display identifier based on tomb type -->
-                          <span class="tomb-id">
-                            {{ getTombShortId(tomb) }}
-                          </span>
-                          <span class="tomb-type-icon">
-                            {{ getTombTypeIcon(tomb) }}
-                          </span>
-                        </div>
-                        <v-tooltip 
-                            activator="parent" 
-                            location="top"
-                            :html="true"
-                          >
-                            
-                            <div class="pa-2">
-                              <div class="text-subtitle-2 font-weight-bold">
-                               Tomb ID: {{ getTombIdentifier(tomb) }}
-                              </div>
-                               Occupied Name: {{ getTombTooltipContent(tomb) }}
-                              <div class="text-caption">Status: {{ tomb.status }}</div>
-                            </div>
-                          </v-tooltip>
-                        </div>
-                      </v-hover>
-                    </div>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card>
-      </v-dialog>
-      <!-- Bone Vault Selection Dialog -->
-  <v-dialog v-model="boneVaultDialog" max-width="600px">
-    <v-card>
-      <v-card-title class="text-h5 bg-primary text-white">
-        Select Bone Vault Slot
-      </v-card-title>
-      <v-card-text>
-        <v-list>
-          <v-list-item 
-            v-for="slot in availableBoneVaultSlots" 
-            :key="slot.id"
-            @click="selectedBoneVaultSlot = slot"
-            :class="{ 'selected-slot': selectedBoneVaultSlot?.id === slot.id }"
-          >
-            <v-list-item-title>
-              Bone Vault Number: {{ slot.bone_vault_number }}
-            </v-list-item-title>
-            <v-list-item-subtitle>
-              Status: {{ slot.status }}
-            </v-list-item-subtitle>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn 
-          color="primary" 
-          variant="text" 
-          @click="confirmMoveToVault"
-          :disabled="!selectedBoneVaultSlot"
-        >
-          Confirm Move
-        </v-btn>
-        <v-btn 
-          color="grey" 
-          variant="text" 
-          @click="boneVaultDialog = false"
-        >
-          Cancel
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-      <!-- Tomb Details Dialog -->
-      <v-dialog v-model="detailsDialog" max-width="600px">
-        <v-card v-if="selectedTomb">
-          <v-card-title class="text-h5 bg-primary text-white pa-4">
-            {{ getTombIdentifier(selectedTomb) }}
-          </v-card-title>
-          <v-card-text class="pa-4">
-            <v-list density="compact">
-                <v-list-item>
-                <template v-slot:prepend>
-                  <v-icon color="primary">mdi-account</v-icon>
-                </template>
-                <v-list-item-title>Deceased Full Name</v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ getTombTooltipContent(selectedTomb) }}
-                </v-list-item-subtitle>
-              </v-list-item>
-              <v-list-item v-for="(value, key) in getTombDetails(selectedTomb)" :key="key">
-                <template v-slot:prepend>
-                  <v-icon color="primary">{{ getFieldIcon(key) }}</v-icon>
-                </template>
-                <v-list-item-title>{{ formatFieldName(key) }}</v-list-item-title>
-                <v-list-item-subtitle>{{ value }}</v-list-item-subtitle>
-              </v-list-item>
-
-              <!-- New Expiration Details -->
-              <v-list-item v-if="selectedTomb.burialRecord">
-                <template v-slot:prepend>
-                  <v-icon color="warning">mdi-clock</v-icon>
-                </template>
-                <v-list-item-title>Days Remaining</v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ selectedTomb.burialRecord.days_left }} days 
-                  (Total Coverage: {{ selectedTomb.burialRecord.year_covered }} years)
-                </v-list-item-subtitle>
-              </v-list-item>
-
-            </v-list>
-            <!-- Expiration Warning -->
-            <v-alert 
-              v-if="selectedTomb.status === 'expired'"
-              type="warning" 
-              variant="outlined" 
-              class="mt-4"
-            >
-              This tomb has expired and will be moved to the Bone Vault.
-            </v-alert>
-            <!-- Tomb History Section -->
-            <v-divider class="my-4" />
-              <div class="text-h6">Tomb History</div>
-              <v-list>
-                <v-list-item v-for="(record, index) in selectedTombHistory" :key="index">
-                  <v-list-item-title>{{ record.full_name }}</v-list-item-title>
-                  <v-list-item-subtitle>
-                    Occupied from {{ record.date_from_use }} to {{ record.date_to_removed }}
-                  </v-list-item-subtitle>
-                  <v-list-item-subtitle v-if="record.new_tomb_place && record.new_tomb_place !== 'Not Specified'">
-                    Moved to: {{ record.new_tomb_place }}
-                  </v-list-item-subtitle>
-                  <v-list-item-subtitle>
-                    Duration: {{ record.duration }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item v-if="selectedTombHistory.length === 0">
-                  <v-list-item-title>No history records found.</v-list-item-title>
-                </v-list-item>
-              </v-list>
-          </v-card-text>
-
-          <v-card-actions>
-            <v-spacer />
-            <v-btn 
-              v-if="selectedTomb.status === 'expired'" 
-              color="warning" 
-              variant="outlined" 
-              @click="moveToVault(selectedTomb)"
-            >
-              Move to Bone Vault
-            </v-btn>
-            <v-btn color="primary" variant="text" @click="editItem(selectedTomb)">
-              Edit
-            </v-btn>
-            <v-btn color="grey" variant="text" @click="detailsDialog = false">
-              Close
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
-    </v-container>
-  </v-card>
-</template>
-
-<script setup>
+  </template>
+  
+  <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { format, differenceInMinutes, differenceInHours, differenceInYears } from 'date-fns';
@@ -529,6 +149,7 @@ const fetchAvailableBoneVaultSlots = async () => {
   }
 };
 
+
 // Modify the moveToVault method
 const moveToVault = async (tomb) => {
   try {
@@ -559,9 +180,8 @@ const confirmMoveToVault = async () => {
 
   try {
     const tomb = selectedTomb.value;
-    const newTombPlace = `Bone Vault ${selectedBoneVaultSlot.value.bone_vault_number}`;
 
-    await createHistoryOldUserRecord(tomb, newTombPlace);
+    await createHistoryOldUserRecord(tomb);
 
     // 1. Update the selected bone vault slot
     await axios.patch(`${apiUrl}/items/bone_vault_stores/${selectedBoneVaultSlot.value.id}`, {
@@ -641,7 +261,7 @@ const confirmMoveToVault = async () => {
 };
 
 // New method to create history record for old users
-const createHistoryOldUserRecord = async (tomb, newTombPlace = null) => {
+const createHistoryOldUserRecord = async (tomb) => {
   try {
     // Determine the original tomb details based on the collection
     let tombName = '';
@@ -666,86 +286,89 @@ const createHistoryOldUserRecord = async (tomb, newTombPlace = null) => {
         break;
     }
 
-    // If no burial record exists, return early
-    if (!tomb.burialRecord) return;
+    // Only create a history record if there's a burial record with a name
+    if (tomb.burialRecord) {
+      const fullName = [
+        tomb.burialRecord.first_name,
+        tomb.burialRecord.middle_name,
+        tomb.burialRecord.last_name
+      ].filter(Boolean).join(' ');
 
-    const fullName = [
-      tomb.burialRecord.first_name,
-      tomb.burialRecord.middle_name,
-      tomb.burialRecord.last_name
-    ].filter(Boolean).join(' ');
-
-    // Determine the first usage date
-    const dateFromUse = tomb.burialRecord.date_of_death || new Date().toISOString();
-    
-    // Determine the removal date (current date when moving to bone vault or when tomb expires)
-    const dateToRemoved = new Date().toISOString();
-
-    // Use the selectedBoneVaultSlot to get the specific new tomb place
-    const specificNewTombPlace = newTombPlace || 
-      (selectedBoneVaultSlot.value 
-        ? `Bone Vault ${selectedBoneVaultSlot.value.bone_vault_number}` 
-        : 'Not Specified');
-
-    await axios.post(`${apiUrl}/items/history_old_user`, {
-      full_name: fullName,
-      status: tomb.status,
-      date: tomb.burialRecord.date_of_death || new Date().toISOString(),
-      tomb_name: tombName,
-      tomb_id: tombId,
-      original_collection: selectedCollection.value,
-      new_tomb_place: specificNewTombPlace, // Explicitly capture new tomb place
-      date_from_use: dateFromUse,
-      date_to_removed: dateToRemoved
-    });
+      await axios.post(`${apiUrl}/items/history_old_user`, {
+        full_name: fullName,
+        status: tomb.status,
+        date: tomb.burialRecord.date_of_death || new Date().toISOString(),
+        tomb_name: tombName,
+        tomb_id: tombId,
+        original_collection: selectedCollection.value
+      });
+    }
   } catch (error) {
     console.error('Error creating history old user record:', error);
   }
 };
 
+// Updated fetchBurialRecordsForTomb to include full history fetching
 const fetchTombHistory = async (tomb) => {
   try {
-    const response = await axios.get(`${apiUrl}/items/history_old_user`, {
+    // Determine the unique identifiers for this tomb across different collections
+    const tombIdentifiers = [
+      tomb.id,  // Primary ID
+      tomb.tomb_number,  // For graveyards
+      tomb.ab_store_name,  // For apartment stores
+      tomb.bone_vault_number,  // For bone vault stores
+      tomb.apartment_baby_number  // For apartment baby stores
+    ].filter(Boolean);  // Remove any null or undefined values
+
+    // Fetch history from the history_old_user endpoint
+    const historyResponse = await axios.get(`${apiUrl}/items/history_old_user`, {
       params: {
         filter: {
-          tomb_id: tomb.id
+          _or: [
+            { tomb_id: { _in: tombIdentifiers } },
+            { tomb_name: { _in: tombIdentifiers.map(id => id.toString()) } }
+          ]
         },
-        sort: ['-date_from_use'] // Sort by most recent first
+        sort: '-date' // Sort by most recent first
       }
     });
-    
-    // Transform the history data to include more detailed information
-    const transformedHistory = response.data.data.map(record => ({
-      full_name: record.full_name,
-      tomb_name: record.tomb_name,
-      original_collection: record.original_collection,
-      new_tomb_place: record.new_tomb_place || 'N/A', // Add new tomb place
-      status: record.status,
-      date_from_use: format(new Date(record.date_from_use), 'yyyy-MM-dd HH:mm:ss'),
-      date_to_removed: record.date_to_removed 
-        ? format(new Date(record.date_to_removed), 'yyyy-MM-dd HH:mm:ss')
-        : 'Currently Occupied',
-      duration: record.date_to_removed
-        ? `${differenceInYears(new Date(record.date_to_removed), new Date(record.date_from_use))} years`
-        : 'Ongoing'
+
+    // Format the history
+    const formattedHistory = historyResponse.data.data.map(historyItem => ({
+      name: historyItem.full_name,
+      startDate: historyItem.date,
+      endDate: historyItem.date,
+      status: historyItem.status,
+      tombName: historyItem.tomb_name
     }));
 
-    return transformedHistory;
+    // If current tomb has a burial record, add it to the history
+    if (tomb.burialRecord) {
+      const currentOccupantName = [
+        tomb.burialRecord.first_name,
+        tomb.burialRecord.middle_name,
+        tomb.burialRecord.last_name
+      ].filter(Boolean).join(' ');
+
+      formattedHistory.unshift({
+        name: currentOccupantName,
+        startDate: tomb.burialRecord.date_of_death,
+        endDate: new Date().toISOString(),
+        status: tomb.status,
+        tombName: getTombIdentifier(tomb)
+      });
+    }
+
+    return formattedHistory;
   } catch (error) {
     console.error('Error fetching tomb history:', error);
     return [];
   }
 };
-
-
-const showTombDetails = async (tomb) => {
-  selectedTomb.value = tomb;
-  selectedTombHistory.value = await fetchTombHistory(tomb); // Fetch history when showing details
-  detailsDialog.value = true;
-};
-
-const selectedTombHistory = ref([]);
-
+const tombHistory = computed(() => {
+  // This now relies on the fetchTombHistory method
+  return selectedTomb.value ? fetchTombHistory(selectedTomb.value) : [];
+});
 
 // Modify the createTombHistoryRecord method to complement the new approach
 const createTombHistoryRecord = async (tomb) => {
@@ -766,7 +389,6 @@ const createTombHistoryRecord = async (tomb) => {
     console.error('Error creating tomb history record:', error);
   }
 };
-
 
 const selectedCollectionTitle = computed(() => {
   return collections.find(c => c.value === selectedCollection.value).label;
@@ -922,22 +544,12 @@ const fetchBurialRecordsForTomb = async (tomb) => {
   }
 };
 
+// Modify existing updateTombStatusBasedOnOccupancy to handle expiration
 const updateTombStatusBasedOnOccupancy = async (tomb) => {
-  // If no burial record exists, immediately set status to 'available'
-  if (!tomb.burialRecord) {
-    try {
-      await axios.patch(`${apiUrl}/items/${selectedCollection.value}/${tomb.id}`, {
-        status: 'available'
-      });
-      tomb.status = 'available';
-      return tomb;
-    } catch (error) {
-      console.error(`Error setting tomb ${tomb.id} to available:`, error);
-      return tomb;
-    }
+  if (!tomb.burialRecord || !tomb.burialRecord.date_of_death) {
+    return tomb;
   }
 
-  // If burial record exists, proceed with status logic
   const burialRecord = tomb.burialRecord;
   const { daysPassed, daysLeft, yearCovered } = calculateYearCoveredAndDays(
     burialRecord.date_of_death, 
@@ -950,27 +562,13 @@ const updateTombStatusBasedOnOccupancy = async (tomb) => {
   tomb.burialRecord.days_left = daysLeft;
   tomb.burialRecord.year_covered = yearCovered;
 
-  // Status change logic with more granular occupancy statuses
+  // Status change logic with expiration handling
   let newStatus = tomb.status;
 
+  // Existing status change logic remains the same
   if (daysLeft <= 0) {
     // Tomb has expired
     newStatus = 'expired';
-  } else if (burialRecord.date_of_death) {
-    const deathDate = new Date(burialRecord.date_of_death);
-    const currentDate = new Date();
-    const hoursSinceDeath = differenceInHours(currentDate, deathDate);
-
-    if (hoursSinceDeath <= 1) {
-      // Within 1 hour of burial - recently occupied
-      newStatus = 'recently_occupied';
-    } else if (hoursSinceDeath > 1 && daysPassed <= 365) {
-      // Between 1 hour and 1 year - active
-      newStatus = 'active';
-    } else {
-      // More than 1 year - long term occupied
-      newStatus = 'long_term_occupied';
-    }
   }
 
   // Update status if it has changed
@@ -991,6 +589,7 @@ const updateTombStatusBasedOnOccupancy = async (tomb) => {
 
 // Reuse the existing calculateYearCoveredAndDays function from your previous code
 function calculateYearCoveredAndDays(dateOfDeath, yearCovered, numberOfRenewals) {
+  console.log('Input values:', { dateOfDeath, yearCovered, numberOfRenewals });
   
   if (!dateOfDeath) return { daysPassed: 0, daysLeft: 0, yearCovered: 0 };
   
@@ -1207,22 +806,10 @@ const getTombIdentifier = (tomb) => {
 };
 
 const getTombDetails = (tomb) => {
-  const detailsToExclude = ['id', 'date_created', 'date_updated', 'burialRecord'];
-  const details = Object.fromEntries(
-    Object.entries(tomb)
-      .filter(([key]) => !detailsToExclude.includes(key))
-      .map(([key, value]) => [formatFieldName(key), value])
+  const excludeFields = ['id', 'created_at', 'updated_at', 'burialRecord'];
+  return Object.fromEntries(
+    Object.entries(tomb).filter(([key]) => !excludeFields.includes(key))
   );
-   // Add burial record details if available
-   if (tomb.burialRecord) {
-    details['Date of Death'] = tomb.burialRecord.date_of_death 
-      ? format(new Date(tomb.burialRecord.date_of_death), 'yyyy-MM-dd') 
-      : 'Not Specified';
-    
-    
-  }
-  
-  return details;
 };
 
 const getStatusCount = (status) => {
@@ -1234,7 +821,11 @@ const getNeedsAttentionCount = () => {
   return tombs.value.filter(tomb => attentionStatuses.includes(tomb.status)).length;
 };
 
-
+// Enhanced event handlers
+const showTombDetails = (tomb) => {
+  selectedTomb.value = tomb;
+  detailsDialog.value = true;
+};
 
 const confirmDelete = (item) => {
   itemToDelete.value = item;
@@ -1322,7 +913,7 @@ const inactiveItems = computed(() => {
 
 
 </script>
-
+  
 <style scoped>
 .data-table-container {
   margin-bottom: 16px;

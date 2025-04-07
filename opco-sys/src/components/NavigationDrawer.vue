@@ -22,7 +22,6 @@
 
     <!-- Navigation Section -->
     <div class="nav-content">
-      <!-- Primary Navigation -->
       <v-list class="nav-list px-2">
         <template v-for="(item, index) in navigationItems" :key="index">
           <!-- Section Divider -->
@@ -33,16 +32,106 @@
             {{ item.heading }}
           </v-list-subheader>
 
-          <!-- Navigation Item -->
+          <!-- Nested Navigation Item with Expandable Children -->
+          <v-list-group 
+            v-if="item.children"
+            :value="item.title"
+            no-action
+          >
+            <template v-slot:activator="{ props }">
+              <v-list-item 
+                v-bind="props"
+                :ripple="false"
+                class="nav-item mb-1"
+                rounded="lg"
+              >
+                <template v-slot:prepend>
+                  <div class="icon-container">
+                    <v-icon
+                      :color="'medium-emphasis'"
+                      class="nav-icon"
+                    >
+                      {{ item.icon }}
+                    </v-icon>
+                  </div>
+                </template>
+
+                <v-list-item-title 
+                  class="nav-item-title"
+                  :class="{ 'hidden': !drawerOpen }"
+                >
+                  {{ item.title }}
+                </v-list-item-title>
+              </v-list-item>
+            </template>
+
+            <v-list-item
+              v-for="(child, childIndex) in item.children"
+              :key="childIndex"
+              :to="child.link"
+              :active="$route.name === child.link.name"
+              :ripple="false"
+              class="nav-item mb-1"
+              rounded="lg"
+            >
+              <template v-slot:prepend>
+                <div class="icon-container">
+                  <v-icon
+                    :color="$route.name === child.link.name ? 'primary' : 'medium-emphasis'"
+                    class="nav-icon"
+                    :class="{ 'icon-active': $route.name === child.link.name }"
+                  >
+                    {{ child.icon }}
+                  </v-icon>
+                  <div 
+                    v-if="$route.name === child.link.name" 
+                    class="icon-background"
+                  ></div>
+                </div>
+              </template>
+
+              <v-list-item-title 
+                class="nav-item-title"
+                :class="{ 
+                  'hidden': !drawerOpen,
+                  'title-active': $route.name === child.link.name 
+                }"
+              >
+                {{ child.title }}
+              </v-list-item-title>
+
+              <!-- Status Indicators -->
+              <template v-slot:append>
+                <div v-if="drawerOpen && child.status" class="status-indicator">
+                  <v-chip
+                    v-if="child.status.type === 'badge'"
+                    size="x-small"
+                    :color="child.status.color"
+                    class="status-badge"
+                  >
+                    {{ child.status.content }}
+                  </v-chip>
+                  <v-icon
+                    v-else-if="child.status.type === 'icon'"
+                    :color="child.status.color"
+                    size="small"
+                  >
+                    {{ child.status.icon }}
+                  </v-icon>
+                </div>
+              </template>
+            </v-list-item>
+          </v-list-group>
+
+          <!-- Regular Navigation Item -->
           <v-list-item
-            v-if="!item.heading"
+            v-else-if="!item.heading"
             :to="item.link"
             :active="$route.name === item.link.name"
             :ripple="false"
             class="nav-item mb-1"
             rounded="lg"
           >
-            <!-- Item Layout -->
             <template v-slot:prepend>
               <div class="icon-container">
                 <v-icon
@@ -138,8 +227,6 @@
             @click="navigateToProfile"
           ></v-btn>
         </div>
-
-        
       </div>
     </template>
   </v-navigation-drawer>
@@ -238,11 +325,40 @@ const navigationItems = ref([
     title: 'Dashboard',
     status: { type: 'badge', content: '3', color: 'success' }
   },
+ 
+ 
   { 
+    title: 'Plot List',
+    icon: 'mdi-view-list',
+    children: [
+    
+    { 
     link: { name: 'managePlot' },
     icon: 'mdi-chart-box',
     title: 'Plot Management',
     status: { type: 'icon', icon: 'mdi-clock', color: 'warning' }
+  },
+      { 
+        link: { name: 'lotyard' },
+        icon: 'mdi-map-marker',
+        title: 'Lot Yard',
+      },
+      { 
+        link: { name: 'apartment-tombs' },
+        icon: 'mdi-home-city',
+        title: 'Apartment Store',
+      },
+      { 
+        link: { name: 'boneVault' },
+        icon: 'mdi-archive',
+        title: 'Bone Vault',
+      },
+      { 
+        link: { name: 'babyVault' },
+        icon: 'mdi-baby-carriage',
+        title: 'Baby Vault',
+      }
+    ]
   },
   { heading: 'OPERATIONS' },
   { 
@@ -252,11 +368,16 @@ const navigationItems = ref([
     status: { type: 'badge', content: 'New', color: 'info' }
   },
   { 
+    link: { name: 'interment2' },
+    icon: 'mdi-plus-circle',
+    title: 'New Interment (2)',
+    status: { type: 'badge', content: 'New', color: 'info' }
+  },
+  { 
     link: { name: 'generate' },
     icon: 'mdi-file-document',
-    title: 'Reports',
+    title: 'Expired Burial Record',
   },
-  
 ]);
 </script>
 

@@ -60,20 +60,6 @@
                 <div class="stat-mini-label">Occupancy Rate</div>
                 <div class="stat-mini-value">{{ calculateOccupancyRate() }}%</div>
               </div>
-              <div class="stat-item turnover-rate">
-                <div class="stat-mini-label">
-                  Monthly Turnover
-                  <v-tooltip bottom>
-                    <template #activator="{ props }">
-                      <v-icon v-bind="props" small @click.stop>
-                        mdi-information
-                      </v-icon>
-                    </template>
-                    <span>Percentage of occupied spaces that turned over this month.</span>
-                  </v-tooltip>
-                </div>
-                <div class="stat-mini-value">{{ calculateTurnoverRate() }}%</div>
-              </div>
             </div>
 
             <div class="capacity-utilization">

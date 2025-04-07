@@ -7,7 +7,7 @@
           <div class="d-flex align-center">
             <v-icon color="primary" size="32" class="mr-3">mdi-chart-box</v-icon>
             <div>
-              <h2 class="text-h4 font-weight-bold mb-1">Annual Deaths Analytics</h2>
+              <h2 class="text-h4 font-weight-bold mb-1">Annual Interment Analytics</h2>
               <span class="text-subtitle-1 text-grey">Statistics from {{ minYear }} to {{ maxYear }}</span>
             </div>
           </div>
@@ -113,7 +113,7 @@
                   <v-icon color="success" size="36" class="mr-3">mdi-calendar-range</v-icon>
                   <div>
                     <div class="text-overline">Time Span</div>
-                    <div class="text-h5 font-weight-bold">{{ endYear - startYear + 1 }} Years</div>
+                    <div class="text-h5 font-weight-bold">{{ endYear - startYear  }} Years</div>
                   </div>
                 </div>
               </v-card-text>
@@ -191,7 +191,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
 
@@ -201,6 +201,7 @@ const chartRef = ref(null);
 const chartInstance = ref(null);
 const isLoggedIn = ref(false);
 
+const currentYear = ref(new Date().getFullYear());
 const startYear = ref(2002);
 const endYear = ref(2024);
 const maxYear = ref(0);
@@ -209,7 +210,17 @@ const dialog = ref(false);
 const reportContent = ref('');
 const selectedFormat = ref('csv');
 const formats = ['csv', 'doc', 'pdf'];
-const totalDeaths = ref(0);
+
+// Reactive state for deaths
+const deathData = ref({});
+const totalDeaths = computed(() => {
+  return Object.entries(deathData.value)
+    .filter(([year]) => {
+      const yearNum = parseInt(year);
+      return yearNum >= startYear.value && yearNum <= endYear.value;
+    })
+    .reduce((acc, [, count]) => acc + count, 0);
+});
 
 const fetchData = async () => {
   try {
@@ -223,6 +234,14 @@ const fetchData = async () => {
       deathsPerYear[year] = (deathsPerYear[year] || 0) + 1;
     });
 
+    // Update min and max years based on actual data
+    const years = Object.keys(deathsPerYear).map(year => parseInt(year));
+    minYear.value = Math.min(...years);
+    maxYear.value = Math.max(...years);
+
+    // Store the full death data
+    deathData.value = deathsPerYear;
+
     return deathsPerYear;
   } catch (error) {
     console.error("Error fetching burial records:", error);
@@ -231,9 +250,19 @@ const fetchData = async () => {
 };
 
 const generateChart = (deathsPerYear) => {
+  // Filter deaths per year based on the current year range
+  const filteredDeathsPerYear = Object.fromEntries(
+    Object.entries(deathsPerYear).filter(([year]) => {
+      const yearNum = parseInt(year);
+      return yearNum >= startYear.value && yearNum <= endYear.value;
+    })
+  );
 
-  const years = Object.keys(deathsPerYear).map(year => parseInt(year));
-  const counts = years.map(year => deathsPerYear[year]);
+  // Get years and counts, sorting to ensure chronological order
+  const years = Object.keys(filteredDeathsPerYear)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const counts = years.map(year => filteredDeathsPerYear[year] || 0);
 
   const data = {
     labels: years,
@@ -242,6 +271,8 @@ const generateChart = (deathsPerYear) => {
         label: 'Deaths per Year',
         data: counts,
         backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
       }
     ]
   };
@@ -265,7 +296,7 @@ const generateChart = (deathsPerYear) => {
       plugins: {
         title: {
           display: true,
-          text: 'Deaths per Year',
+          text: `Deaths per Year (${startYear.value} - ${endYear.value})`,
           font: {
             size: 18,
             weight: 'bold',
@@ -305,47 +336,45 @@ const generateChart = (deathsPerYear) => {
 };
 
 const applyYearFilter = async () => {
-  const deathsPerYear = await fetchData();
-  const filteredDeathsPerYear = Object.fromEntries(
-    Object.entries(deathsPerYear).filter(([year]) => {
-      const yearNum = parseInt(year);
-      return yearNum >= startYear.value && yearNum <= endYear.value;
-    })
-  );
-  await nextTick();
-  generateChart(filteredDeathsPerYear);
+  // Validate year input
+  if (startYear.value > endYear.value) {
+    // Swap values if start year is greater than end year
+    [startYear.value, endYear.value] = [endYear.value, startYear.value];
+  }
+
+  // Ensure years are within the min and max range
+  startYear.value = Math.max(startYear.value, minYear.value);
+  endYear.value = Math.min(endYear.value, maxYear.value);
+
+  // Regenerate the chart with filtered data
+  generateChart(deathData.value);
 };
 
 const refreshData = async () => {
-  const deathsPerYear = await fetchData();
-  const years = Object.keys(deathsPerYear).map(year => parseInt(year));
-  minYear.value = Math.min(...years);
-  maxYear.value = Math.max(...years);
+  await fetchData();
+  
+  // Update start and end year to the last 5 years
+  startYear.value = Math.max(currentYear.value - 5, minYear.value);
+  endYear.value = currentYear.value;
+  
   await nextTick();
-  generateChart(deathsPerYear);
+  generateChart(deathData.value);
 };
 
-const openReportDialog = async () => {
-  const deathsPerYear = await fetchData();
-  const filteredDeathsPerYear = Object.fromEntries(
-    Object.entries(deathsPerYear).filter(([year]) => {
-      const yearNum = parseInt(year);
-      return yearNum >= startYear.value && yearNum <= endYear.value;
-    })
-  );
-
-  totalDeaths.value = Object.values(filteredDeathsPerYear).reduce((acc, count) => acc + count, 0);
+const openReportDialog = () => {
+  const averageDeathsPerYear = (totalDeaths.value / (endYear.value - startYear.value + 1)).toFixed(2);
 
   reportContent.value = `Report for the period from ${startYear.value} to ${endYear.value}:<br>` +
                         `Total deaths: ${totalDeaths.value}<br>` +
-                        `Average deaths per year: ${totalDeaths.value / (endYear.value - startYear.value + 1)}`;
+                        `Average deaths per year: ${averageDeathsPerYear}`;
   dialog.value = true;
 };
 
 const downloadReport = () => {
+  const averageDeathsPerYear = (totalDeaths.value / (endYear.value - startYear.value + 1)).toFixed(2);
   const reportData = `Report for the period from ${startYear.value} to ${endYear.value}\n` +
                      `Total deaths: ${totalDeaths.value}\n` +
-                     `Average deaths per year: ${totalDeaths.value / (endYear.value - startYear.value + 1)}`;
+                     `Average deaths per year: ${averageDeathsPerYear}`;
 
   let blob;
   if (selectedFormat.value === 'csv') {
@@ -372,8 +401,6 @@ onMounted(async () => {
 watch(isLoggedIn, async (newVal) => {
   if (newVal) {
     await refreshData();
-    await nextTick();
-    totalDeaths.value = Object.values(await fetchData()).reduce((acc, count) => acc + count, 0);
   }
 });
 
@@ -383,7 +410,6 @@ const loginUser = async () => {
 
 setTimeout(loginUser, 2000);
 </script>
-
 <style scoped>
 .analytics-dashboard {
   background-color: #f8f9fa;

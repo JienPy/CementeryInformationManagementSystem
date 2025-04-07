@@ -130,6 +130,9 @@ const apiUrl = 'http://localhost:8055';
 const requestNewPasswordEndpoint = `${apiUrl}/items/admin_messages`;
 const router = useRouter();
 
+// Static generated token
+const token = "IolMls_vrmy_ZSb4xRT8y0YT7KxVW1tY";
+
 // Form data
 const email = ref('');
 const message = ref('');
@@ -167,18 +170,35 @@ const messageRules = [
 
 // Submit handler
 async function requestNewPassword() {
+  // Validate the form before proceeding
   if (!form.value.validate()) return;
-  
+
   isLoading.value = true;
   errorMessage.value = '';
   successMessage.value = '';
-  
+
+  // Check if the token is available before proceeding
+  if (token) {
+    console.log("Token is available:", token);
+  } else {
+    console.error("No token available. Cannot proceed with the request.");
+    errorMessage.value = "No token available. Cannot proceed with the request.";
+    isLoading.value = false;
+    return;
+  }
+
   try {
+    // Make the POST request with the token in the headers
     await axios.post(requestNewPasswordEndpoint, {
       email: email.value,
       message: message.value,
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
-    
+
+    // Set success message after successful submission
     successMessage.value = 'Your request has been submitted successfully. Please check your email for further instructions.';
     
     // Reset form after successful submission
@@ -188,14 +208,16 @@ async function requestNewPassword() {
       form.value.reset();
     }, 3000);
     
-    // Redirect after delay
+    // Redirect after a delay
     setTimeout(() => {
       router.push('/login');
     }, 5000);
   } catch (error) {
+    // Handle errors from the request
     errorMessage.value = error?.response?.data?.error?.message || 
       'An error occurred while submitting your request. Please try again.';
   } finally {
+    // Ensure loading state is reset
     isLoading.value = false;
   }
 }
@@ -288,7 +310,7 @@ async function requestNewPassword() {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  display: flex;
+ display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
